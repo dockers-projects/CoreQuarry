@@ -6,6 +6,13 @@
 
 Source: <https://github.com/re-Isearch/CoreQuarry> · Licensed under the [Apache License 2.0](#license)
 
+A zero-dependency, C++ hybrid retrieval kernel designed for offline RAG infrastructure and agentic search. CoreQuarry implements structure-preserving indexing directly over ggml tensors, completely bypassing the need to maintain external database containers or deploy heavy, multi-layered Python orchestration libraries.
+
+Why this matters:
+* Zero Abstraction Bloat: Eliminates the network serialization overhead found in typical client-server architectures.
+* Preserved Data Schemas: Retains parent-child relationship graphs natively, preventing the metadata loss caused by typical text-splitting algorithms. 
+* Bare-Metal Speed: Compiles directly into standard C/C++ targets, utilizing local hardware acceleration (CUDA, Metal, Vulkan) for tensor math.
+
 ## Why is this a game changer for Agents
 
 Large language models are remarkably good at language. They can recognise semantic similarity, infer unstated relationships, synthesise information across passages, and reason over text whose meaning is expressed implicitly rather than formally.
@@ -186,3 +193,175 @@ They are also available via the following alternative 'compatibility' names:
    xs:dateTime     	// Alias of date
    xs:time     	// Alias of time
 </PRE>
+
+## Interface
+
+These days it seems most agents flourish best with CLIs. We provide a very full-featured CLI with self-documenation. <PRE>
+quarry search -d db [options] term...
+options:
+
+database:
+  -d database                Search the database having the specified root name.
+  -fuel percent              Set the available space fuel as a percentage.
+  -cd directory              Change the working directory before opening the database.
+  -id document-id            Request documents having the specified document identifier.
+  -D file                    Load a result set from the specified file.
+
+presentation:
+  -p element-set             Present the specified element set as the identifier with each result.
+  -P ancestor|ancestor/descendant  Present ancestor content for hits. May be specified repeatedly. The
+                             ancestor/descendant form selects a descendant within the named
+                             ancestor.
+  -show                      Show the best hit neighborhood.
+  -advice number             Use number as adviced neighborhood length.
+  -summary                   Show the record summary or description.
+  -XML                       Present results using an XML-like structure.
+  -Json                      Present search results using JSON.
+  -H[TML]                    Use HTML record presentation.
+  -q[uiet]                   Print results and exit immediately.
+  -t[erse]                   Print terse result records.
+  -tab                       Use tab-delimited terse output.
+  -prefix text               Add the specified prefix to matched terms in presented documents.
+  -suffix text               Add the specified suffix to matched terms in presented documents.
+  -headline element          Use an alternative headline display based on the specified element.
+  -filename                  Display filenames only.
+  -filesystem                Equivalent to -q -filename -byterange.
+
+sorting:
+  -c                         Sort results chronologically.
+  -cr                        Sort results chronologically from oldest to newest.
+  -s                         Sort results by relevance score.
+  -sc                        Sort results by score modified by category.
+  -smag factor               Sort by score and category using the specified magnetism factor.
+  -scat                      Sort results by category.
+  -snews                     Sort results by news rank.
+  -h                         Sort results by the number of different matching terms. See -joint.
+  -k                         Sort results by record key.
+  -n                         Do not sort results; retain indexing order.
+  -sort B[entley]|S[edgewick]|D[ualPivot]|T[im]|N[ative]  Select the sorting implementation.
+
+normalization:
+  -AF_norm | -norm=AF        Use AF normalization.
+  -bytes_norm | -norm=bytes  Use byte-count normalization.
+  -euclidean_norm | -norm=E1  Use Euclidean normalization.
+  -E2_norm | -norm=E2        Use E2 normalization (pairwise term coherence and collective span).
+                             Hyperparameters (CoverageFloor, ProximityGain) set in [E2] of datebase
+                             ini
+  -L1_norm | -norm=L1        Use cosine L1 normalization.
+  -L2_norm | -norm=L2        Use cosine L2 normalization..
+  -S2_norm | -norm=S2        Use cosine S2 normalization. Similar to L2 but with saturation..
+  -BM25_norm | -norm=BM25    Use BM25. Hyperparameters (K1,B,A,Regency,Pivot) set in [BM25] of
+                             datebase ini
+  -log_norm | -norm=log      Use logarithmic normalization.
+  -max_norm | -norm=max      Use maximum-score normalization.
+  -no_norm                   Do not calculate or normalize scores.
+
+query:
+  -scan field                Use the field scan service.
+  -shell                     Enter interactive search mode.
+  -rpn                       Interpret the query using Reverse Polish Notation.
+  -infix                     Interpret the query using conventional infix notation. Additional forms
+                             include ! for NOT and field/ for WITHIN:field.
+  -words                     Interpret the remaining arguments as distinct words (ORd).
+  -natural                   Interpret the remaining arguments as words in a natural query.
+  -and                       Interpret the remaining words as an intersection.
+  -smart field               Perform a fielded smart search.
+  -regular                   Use a regular query supporting fields and weights but no operators.
+  -syn                       Perform synonym expansion.
+
+scoring:
+  -priority factor           Override the priority factor.
+  -scale maximum             Normalize scores into the range zero through the specified maximum.
+  -top count                 Return at most the specified number of results.
+  -negative                  Include results having negative scores.
+  -positive                  Include only results having positive scores.
+  -clip count                Clip the result set at the specified count.
+  -common threshold          Set the common-word threshold.
+  -reduce                    Reduce the result set using the minimum number of different matches.
+  -reduce0                   Equivalent to -h -reduce.
+  -drop_h count              Drop results having fewer than the specified number of different
+                             matches.
+  -drop_a score              Drop results whose absolute score is below the specified value.
+  -drop_s score              Drop results whose scaled score is below the specified value.
+
+metadata:
+  -hits                      Display the total number of matching hits for each record.
+  -joint                     Display the number of different matching terms for each record.
+  -score                     Display unnormalized scores.
+  -rating                    Scale scores over the retrieved set and display as 1-5 star ratings.
+  -date                      Display the record date.
+  -datemodified              Display the record modification date.
+  -key                       Display the record key.
+  -doctype                   Display the record document type.
+  -byterange                 Display the byte range occupied by each document within its source
+                             file.
+
+range:
+  -range first[-last] | all  Display results from the first position through the optional last
+                             position (or all).
+  -daterange date-range      Restrict all searches to records whose record dates fall within the
+                             specified range.
+  -startdoc position         Start displaying the result set at the specified document position.
+  -enddoc position           Stop displaying the result set at the specified document position.
+
+storage:
+  -o option                  Specify a document-type-specific option.
+  -save file                 Save the result set into the specified file.
+  -load file                 Load a result set from the specified file.
+
+diagnostics:
+  -level 0-255               Set the message level.
+  -debug                     Enable extensive debugging messages.
+  -bench                     Display process resource usage.
+  -pager program             Use the specified program to page results.
+  -more                      Equivalent to -pager /bin/more.
+  -copyright                 Display the copyright statement.
+  -help[=json|txt]           Display command-line help, optionally as JSON.
+  -qhelp[=json|txt]          Display available query operators, optionally as JSON.
+  -ohelp                     Display ini options..
+
+terms:
+  Terms, operands, or a complete query expression.
+  With -rpn, the expression must use Reverse Polish Notation.
+  With -infix, conventional infix notation is expected.
+  With -words or -regular, terms are combined using OR.
+  The default query mode is Smart search.
+
+fielded search:
+  [[fieldname][relation]]searchterm[*][:weight]
+  Relations are <, >, >=, <= and <>. Their semantics depend
+  upon the field datatype.
+
+term modifiers:
+  fieldname/searchterm       Search for the term within the specified field.
+  searchterm*                Perform right truncation.
+  *searchterm                Perform left truncation. (Limited to indexedSIS block length)
+  * and ?                    Use glob-pattern matching.
+  searchterm~                Perform fuzzy Ratcliff matching.
+  searchterm#                Perform phonetic Soundex matching.
+  searchterm=                Perform exact case-dependent matching.
+  searchterm>                Perform exact right-truncated matching; equivalent to =*.
+  searchterm.                Perform exact-term matching so that, for example, auto does not match
+                             auto-mobile.
+  searchterm$                Interpret the term as a freeform encoded address using a sparse vector.
+  searchterm@                Interpret the term as an embeddings address using a dense vector.
+  searchterm:weight          Apply a term weight. The default weight is 1; negative values lower
+                             rank.
+  "literal phrase"           Perform a literal phrase search.
+
+Special in-term characters: &.@_
+   These may appear inside words (tokens) to be considered term characters. see ctype.c
+
+date ranges:
+  YYYY[MM[DD]][-YYYY[MM[DD]]]
+  YYYY[MM[DD]]/[[YYYY]MM]DD
+  ISO 8601 and other recognized date formats are accepted.
+  Example: 2005 selects every record dated during 2005.
+  -daterange restricts all searches; WITHIN:<daterange>
+  restricts only its operand set.
+
+reserved syntax:
+  RECT{N,W,S,E} is reserved for bounding-box searches in
+  predefined numeric quadrant fields.
+</PRE>
+
