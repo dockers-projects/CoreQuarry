@@ -14,7 +14,11 @@ But text is more than a sequence of words.
 
 Documents also have structure: passages contain other passages; annotations overlap; entities participate in several structures at once; a quotation may cross the boundary of an editorial section; a claim can be linked to evidence elsewhere; linguistic, scholarly and domain-specific annotations can coexist over the same words. When documents are reduced to chunks for conventional RAG, much of this information is either flattened or lost.
 
-CoreQuarry makes that structure queryable.
+Some have attempted to use pure structural trees and graphs. They, however, fall apart when trying to handle progressive textual dimensions for two reasons: 
+* 1. The Overlapping Hierarchy Problem: Text often requires multiple concurrent, non-nested structures. If you want to model a text tree based on logical structure (chapters, paragraphs, sentences) while simultaneously modeling a graph based on physical structure (pages, lines, columns), a single tree cannot do both without breaking. A token progression belongs to both structures simultaneously. 
+* 2. Loss of Relative Spatial Distance: In a pure tree, the distance between the last token of Paragraph 1 and the first token of Paragraph 2 looks structurally identical to the distance between two paragraphs miles apart in content. Trees do not have a natural concept of a continuous metric scale or flow. 
+
+By recording the exact physical positions and boundaries of terms and schemas at the engine layer, it keeps structural paths open while allowing text to be read as a sequential stream. CoreQuarry makes that structure queryable.
 
 The result can be thought of as a **textual graph**—but it is importantly different from a conventional graph. Text has *spatiality*. Its structures are anchored in a shared textual space, and relationships such as **before, after, within, contains, overlaps and intersects** arise from that space itself. Two annotations do not merely have an abstract edge between them: they may occupy, share or cross regions of the same underlying text.
 
