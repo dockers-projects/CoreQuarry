@@ -25,32 +25,6 @@ And it runs *entirely on your own hardware*. No cloud service, no API key, no da
 
 It's also built to be queried by something other than a person. Alongside the usual boolean operators, CoreQuarry adds ones like `PROMOTE`, `DEMOTE`, and `MAYBE`, designed for an LLM or agent to construct and refine a search plan step by step, rather than a human typing one query and reading the results. See [Where it's used](#where-its-used) below.
 
-## Why is this a game changer for Agents
-
-Large language models are remarkably good at language. They can recognise semantic similarity, infer unstated relationships, synthesise information across passages, and reason over text whose meaning is expressed implicitly rather than formally.
-
-But text is more than a sequence of words.
-
-Documents also have structure: passages contain other passages; annotations overlap; entities participate in several structures at once; a quotation may cross the boundary of an editorial section; a claim can be linked to evidence elsewhere; linguistic, scholarly and domain-specific annotations can coexist over the same words. When documents are reduced to chunks for conventional RAG, much of this information is either flattened or lost.
-
-CoreQuarry makes that structure queryable.
-
-The result can be thought of as a **textual graph**—but it is importantly different from a conventional graph. Text has *spatiality*. Its structures are anchored in a shared textual space, and relationships such as **before, after, within, contains, overlaps and intersects** arise from that space itself. Two annotations do not merely have an abstract edge between them: they may occupy, share or cross regions of the same underlying text.
-
-This gives RAG a form of structure that complements the strengths of the LLM.
-
-The LLM can do what it does best: interpret language, recognise relevance, synthesise evidence and generate an answer. CoreQuarry can do something different: determine precisely which textual structures are related, how they intersect, and which context should be assembled for the model.
-
-Instead of forcing the LLM to reconstruct document structure from flattened chunks, the retrieval layer can provide that structure explicitly.
-
-This changes the role of retrieval. Vector similarity can answer **“what text is semantically related?”** Structural search can additionally answer **“where does this occur, what contains it, what overlaps it, what is it connected to, and which surrounding material belongs with it?”**
-
-The combination creates a richer form of RAG: semantic reasoning over context assembled from the actual structure of the source, rather than from arbitrary chunk boundaries.
-
-CoreQuarry therefore provides something between text and a knowledge graph: a queryable structural representation that preserves the spatial character of text. It allows an LLM to operate not simply on retrieved passages, but on selected regions of a structured textual space.
-
-
-
 ## Why local-first
 
 Most "AI-powered search" today means sending your documents somewhere else (a hosted vector database, an LLM provider's API, etc.) for chunking and embedding. Which means your data crosses infrastructure you don't control, sits under legal jurisdictions you might not have chosen, and depends on a vendor's pricing and API both staying the same.
