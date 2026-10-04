@@ -116,6 +116,18 @@ def patch_ib() -> None:
     )
 
 
+    memodoc = ROOT / "ib/doctype/memodoc.cxx"
+    replace_once(
+        memodoc,
+        '#ifdef VECTOR_INDEX\n'
+        '          else if (is_encoded_embedding(Contents)) ft = FIELDTYPE::db_hnsw;\n'
+        '#endif\n',
+        '/* The pinned source references is_encoded_embedding() here, but no '\
+        'declaration or implementation exists in ib/Schmate. Keep vector search '\
+        'enabled while omitting only this broken MEMODOC auto-detection branch. */\n',
+    )
+
+
 def patch_bert_cpp() -> None:
     cmake = ROOT / "bert.cpp/CMakeLists.txt"
     replace_once(
