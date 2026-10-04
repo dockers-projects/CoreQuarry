@@ -128,6 +128,13 @@ def patch_ib() -> None:
     )
 
 
+    oneline_cpp = ROOT / "ib/doctype/oneline.cxx"
+    replace_once(
+        oneline_cpp,
+        "#include <ctype.h>\n",
+        "#include <ctype.h>\n#include <cstring>\n",
+    )
+
     dfd_cpp = ROOT / "ib/src/dfd.cxx"
     replace_once(
         dfd_cpp,
