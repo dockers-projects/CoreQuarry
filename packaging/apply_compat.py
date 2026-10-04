@@ -88,6 +88,33 @@ def patch_schmate() -> None:
 
 
 def patch_ib() -> None:
+    fuzzy_hxx = ROOT / "ib/src/fuzzy.hxx"
+    replace_once(
+        fuzzy_hxx,
+        """// Like a string compare, default is 75%
+inline INT FuzzyCompare(const STRING &s1, const STRING& s2) {
+  const int scale = 100; // 0-100 scale
+  const int threshold = 75; // 75%
+  int match = RatcliffCompare(s1, s2, scale);
+  if (match > threshold) {
+     match = 100; // Anything over threshold counts as a good match
+  }
+  return scale - match; // Over threshold returns 0 
+}
+
+// Compare string s1 with the first (max) len characters of str
+inline INT FuzzyCompare(const STRING &s1, const UCHR *str, const size_t len) {
+  return FuzzyCompare(s1, STRING(str,len)); 
+}
+""",
+        """// Like a string compare, default is 75%
+INT FuzzyCompare(const STRING &s1, const STRING& s2);
+
+// Compare string s1 with the first (max) len characters of str
+INT FuzzyCompare(const STRING &s1, const UCHR *str, const size_t len);
+""",
+    )
+
     fuzzy = ROOT / "ib/src/fuzzy.cxx"
     replace_once(
         fuzzy,
@@ -107,6 +134,28 @@ def patch_ib() -> None:
         fuzzy,
         'size_t       want = HEADROOM(need*sqrt(need),1024);',
         'size_t       want = HEADROOM(need*std::sqrt(need),1024);',
+    )
+
+    replace_once(
+        fuzzy,
+        "\n\n#ifdef TEST\n",
+        """
+
+INT FuzzyCompare(const STRING &s1, const STRING& s2) {
+  const int scale = 100;
+  const int threshold = 75;
+  int match = RatcliffCompare(s1, s2, scale);
+  if (match > threshold)
+    match = 100;
+  return scale - match;
+}
+
+INT FuzzyCompare(const STRING &s1, const UCHR *str, const size_t len) {
+  return FuzzyCompare(s1, STRING(str, len));
+}
+
+#ifdef TEST
+""",
     )
     # <cmath> is now included before any legacy macro definitions.
     replace_once(
@@ -197,6 +246,21 @@ def patch_ib() -> None:
    */
 
 
+""",
+    )
+
+
+    ib_cmake = ROOT / "ib/CMakeLists.txt"
+    replace_once(
+        ib_cmake,
+        """        ibUtils
+        ibLocal
+        Threads::Threads
+""",
+        """        ibUtils
+        ibLocal
+        ibIO
+        Threads::Threads
 """,
     )
 
