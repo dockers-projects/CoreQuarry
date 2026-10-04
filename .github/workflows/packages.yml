@@ -73,7 +73,8 @@ jobs:
             libmagic-dev \
             libjemalloc-dev \
             libgdbm-dev \
-            libssl-dev
+            libssl-dev \
+            uuid-dev
 
       - name: Configure
         run: |
@@ -169,7 +170,7 @@ jobs:
               dnf install -y \
                 gcc gcc-c++ cmake ninja-build pkgconf-pkg-config \
                 libdb-devel file-devel jemalloc-devel gdbm-devel \
-                openssl-devel libgomp rpm-build
+                openssl-devel libgomp libuuid-devel rpm-build
               cmake -S . -B build-rpm -G Ninja \
                 -DCMAKE_BUILD_TYPE=Release \
                 -DCOREQUARRY_VERSION="${{ steps.version.outputs.version }}" \
