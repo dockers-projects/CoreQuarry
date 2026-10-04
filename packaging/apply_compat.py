@@ -87,6 +87,35 @@ def patch_schmate() -> None:
     )
 
 
+def patch_ib() -> None:
+    fuzzy = ROOT / "ib/src/fuzzy.cxx"
+    replace_once(
+        fuzzy,
+        '#include "fuzzy.hxx"\n#include <vector>\n\nextern "C" double sqrt(double x);\n',
+        '#include "fuzzy.hxx"\n'
+        '#include <vector>\n'
+        '#include <algorithm>\n'
+        '#include <cmath>\n',
+    )
+    replace_once(
+        fuzzy,
+        '#define min(x,y) ((x)>(y)?(y):(x))\n\n'
+        '      int cell = min( above + 1, min(left + 1, diag + cost));',
+        '      int cell = std::min(above + 1, std::min(left + 1, diag + cost));',
+    )
+    replace_once(
+        fuzzy,
+        'size_t       want = HEADROOM(need*sqrt(need),1024);',
+        'size_t       want = HEADROOM(need*std::sqrt(need),1024);',
+    )
+    # <cmath> is now included before any legacy macro definitions.
+    replace_once(
+        fuzzy,
+        '\n#include <cmath>\n\nint RatcliffCompare',
+        '\nint RatcliffCompare',
+    )
+
+
 def patch_bert_cpp() -> None:
     cmake = ROOT / "bert.cpp/CMakeLists.txt"
     replace_once(
@@ -120,6 +149,7 @@ endif()
 
 def main() -> None:
     patch_schmate()
+    patch_ib()
     patch_bert_cpp()
     print("Applied pinned CoreQuarry packaging compatibility fixes.")
 
