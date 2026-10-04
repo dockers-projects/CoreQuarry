@@ -74,6 +74,23 @@ environment. Native Windows delivery requires making `ib` and the linked
 dependencies build successfully on Windows first; after that the same release
 pipeline can add a ZIP/MSI and WinGet manifest.
 
+## Pinned dependency compatibility fixes
+
+The package workflow keeps the repository's submodule revisions pinned, but it
+applies a small compatibility layer before configuring CMake. The fixes live in
+`packaging/apply_compat.py` and are intentionally strict: every edit matches an
+exact source anchor and the build fails if a pinned dependency changes enough
+that an edit no longer applies.
+
+The current fixes are limited to portability/build correctness in the pinned
+sources: missing standard headers, modern C++ library compatibility, one
+dangling MEMODOC vector auto-detection call, legacy Metal asset handling, and
+explicit ib library link dependencies. They do not download alternate source
+revisions or silently replace submodules.
+
+This compatibility layer should be removed piece by piece as the equivalent
+fixes land in the upstream pinned projects and CoreQuarry advances those pins.
+
 ## Release process
 
 The `Native packages` GitHub Actions workflow runs on pull requests affecting
