@@ -128,6 +128,13 @@ def patch_ib() -> None:
     )
 
 
+    mmap_cpp = ROOT / "ib/src/mmap.cxx"
+    replace_once(
+        mmap_cpp,
+        "#include <errno.h>\n",
+        "#include <errno.h>\n#include <stdint.h>\n",
+    )
+
     numbers = ROOT / "ib/src/numbers.cxx"
     replace_once(
         numbers,
