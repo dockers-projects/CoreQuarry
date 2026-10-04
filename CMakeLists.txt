@@ -131,15 +131,43 @@ install(
     RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
 )
 
-# quarry links to Schmate when vector support is enabled. Keep the shared
-# Schmate runtime next to the ib shared libraries so quarry's relative RPATH
-# ($ORIGIN/../lib/ib or @loader_path/../lib/ib) resolves after installation.
-install(
-    TARGETS sbert_extended
-    ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}/ib"
-    LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}/ib"
-    RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
+# quarry links transitively through Schmate -> bert -> ggml. Keep every
+# project-owned shared runtime in the same private directory so packages do not
+# depend on build-tree paths. Optional ggml backends are installed only when
+# their targets exist on the current platform.
+set(
+    _corequarry_runtime_targets
+    sbert_extended
+    bert
+    ggml
+    ggml-base
+    ggml-cpu
+    ggml-blas
+    ggml-metal
 )
+
+foreach(_runtime_target IN LISTS _corequarry_runtime_targets)
+    if(TARGET "${_runtime_target}")
+        if(APPLE)
+            set_property(
+                TARGET "${_runtime_target}"
+                APPEND PROPERTY INSTALL_RPATH "@loader_path"
+            )
+        elseif(UNIX)
+            set_property(
+                TARGET "${_runtime_target}"
+                APPEND PROPERTY INSTALL_RPATH "$ORIGIN"
+            )
+        endif()
+
+        install(
+            TARGETS "${_runtime_target}"
+            ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}/ib"
+            LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}/ib"
+            RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
+        )
+    endif()
+endforeach()
 
 install(
     FILES
