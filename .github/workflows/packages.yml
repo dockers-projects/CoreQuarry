@@ -1,0 +1,333 @@
+name: Native packages
+
+on:
+  pull_request:
+    paths:
+      - "CMakeLists.txt"
+      - "cmake/**"
+      - "packaging/**"
+      - ".github/workflows/packages.yml"
+      - ".gitmodules"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Package version for a non-release build"
+        required: false
+        default: "0.0.0"
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: native-packages-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deb:
+    name: DEB / ${{ matrix.arch }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            arch: amd64
+          - runner: ubuntu-24.04-arm
+            arch: arm64
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Resolve version
+        id: version
+        shell: bash
+        run: |
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            version="${GITHUB_REF_NAME#v}"
+          else
+            version="${{ inputs.version }}"
+            [[ -n "${version}" ]] || version="0.0.0"
+          fi
+          echo "version=${version}" >> "${GITHUB_OUTPUT}"
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            cmake \
+            ninja-build \
+            pkg-config \
+            dpkg-dev \
+            libdb-dev \
+            libmagic-dev \
+            libjemalloc-dev \
+            libgdbm-dev \
+            libssl-dev
+
+      - name: Configure
+        run: |
+          cmake -S . -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCOREQUARRY_VERSION="${{ steps.version.outputs.version }}" \
+            -DCOREQUARRY_PACKAGE_ARCH="${{ matrix.arch }}" \
+            -DCMAKE_INSTALL_PREFIX=/usr
+
+      - name: Build installable targets
+        run: |
+          cmake --build build --parallel 2 --target \
+            Iindex Isearch Iutil Idelete zpresent zsearch Iwatch ziplist \
+            quarry sbert_extended
+
+      - name: Build DEB and portable archive
+        run: |
+          mkdir -p dist
+          (
+            cd build
+            cpack -G DEB
+            cpack -G TGZ
+          )
+          find build -maxdepth 1 -type f \
+            \( -name '*.deb' -o -name '*.tar.gz' \) \
+            -exec cp {} dist/ \;
+          ls -lah dist
+
+      - name: Smoke test DEB in clean Ubuntu
+        run: |
+          docker run --rm \
+            -v "${PWD}/dist:/dist:ro" \
+            ubuntu:24.04 \
+            bash -lc '
+              set -euo pipefail
+              apt-get update
+              apt-get install -y /dist/*.deb
+              quarry --help | grep -F "CoreQuarry CLI"
+            '
+
+      - name: Upload DEB artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: corequarry-deb-${{ matrix.arch }}
+          path: dist/*
+          if-no-files-found: error
+
+  rpm:
+    name: RPM / ${{ matrix.arch }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            arch: x86_64
+          - runner: ubuntu-24.04-arm
+            arch: aarch64
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Resolve version
+        id: version
+        shell: bash
+        run: |
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            version="${GITHUB_REF_NAME#v}"
+          else
+            version="${{ inputs.version }}"
+            [[ -n "${version}" ]] || version="0.0.0"
+          fi
+          echo "version=${version}" >> "${GITHUB_OUTPUT}"
+
+      - name: Build RPM in Fedora
+        shell: bash
+        run: |
+          mkdir -p dist
+          docker run --rm \
+            -v "${PWD}:/src" \
+            -w /src \
+            fedora:43 \
+            bash -lc '
+              set -euo pipefail
+              dnf install -y \
+                gcc gcc-c++ cmake ninja-build pkgconf-pkg-config \
+                libdb-devel file-devel jemalloc-devel gdbm-devel \
+                openssl-devel libgomp rpm-build
+              cmake -S . -B build-rpm -G Ninja \
+                -DCMAKE_BUILD_TYPE=Release \
+                -DCOREQUARRY_VERSION="${{ steps.version.outputs.version }}" \
+                -DCOREQUARRY_PACKAGE_ARCH="${{ matrix.arch }}" \
+                -DCMAKE_INSTALL_PREFIX=/usr
+              cmake --build build-rpm --parallel 2 --target \
+                Iindex Isearch Iutil Idelete zpresent zsearch Iwatch ziplist \
+                quarry sbert_extended
+              (
+                cd build-rpm
+                cpack -G RPM
+              )
+              find build-rpm -maxdepth 1 -type f -name "*.rpm" -exec cp {} dist/ \;
+            '
+          ls -lah dist
+
+      - name: Smoke test RPM in clean Fedora
+        run: |
+          docker run --rm \
+            -v "${PWD}/dist:/dist:ro" \
+            fedora:43 \
+            bash -lc '
+              set -euo pipefail
+              dnf install -y /dist/*.rpm
+              quarry --help | grep -F "CoreQuarry CLI"
+            '
+
+      - name: Upload RPM artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: corequarry-rpm-${{ matrix.arch }}
+          path: dist/*
+          if-no-files-found: error
+
+  macos:
+    name: macOS / ${{ matrix.arch }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-15
+            arch: arm64
+          - runner: macos-15-intel
+            arch: x86_64
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Resolve version
+        id: version
+        shell: bash
+        run: |
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            version="${GITHUB_REF_NAME#v}"
+          else
+            version="${{ inputs.version }}"
+            [[ -n "${version}" ]] || version="0.0.0"
+          fi
+          echo "version=${version}" >> "${GITHUB_OUTPUT}"
+
+      - name: Install build dependencies
+        run: |
+          brew install \
+            cmake ninja pkg-config \
+            berkeley-db libmagic jemalloc gdbm libomp openssl@3
+
+      - name: Configure
+        run: |
+          cmake -S . -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCOREQUARRY_VERSION="${{ steps.version.outputs.version }}" \
+            -DCOREQUARRY_PACKAGE_ARCH="${{ matrix.arch }}" \
+            -DCMAKE_INSTALL_PREFIX=/usr
+
+      - name: Build installable targets
+        run: |
+          cmake --build build --parallel 2 --target \
+            Iindex Isearch Iutil Idelete zpresent zsearch Iwatch ziplist \
+            quarry sbert_extended
+
+      - name: Build portable archive
+        run: |
+          mkdir -p dist
+          (
+            cd build
+            cpack -G TGZ
+          )
+          find build -maxdepth 1 -type f -name '*.tar.gz' -exec cp {} dist/ \;
+          ls -lah dist
+
+      - name: Smoke test portable archive
+        run: |
+          archive="$(find dist -maxdepth 1 -type f -name '*.tar.gz' -print -quit)"
+          mkdir smoke
+          tar -xzf "${archive}" -C smoke
+          smoke/usr/bin/quarry --help | grep -F "CoreQuarry CLI"
+
+      - name: Upload macOS artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: corequarry-macos-${{ matrix.arch }}
+          path: dist/*
+          if-no-files-found: error
+
+  release:
+    name: Publish GitHub release
+    if: github.ref_type == 'tag' && startsWith(github.ref_name, 'v')
+    needs:
+      - deb
+      - rpm
+      - macos
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout packaging metadata
+        uses: actions/checkout@v4
+
+      - name: Download packages
+        uses: actions/download-artifact@v4
+        with:
+          pattern: corequarry-*
+          path: dist
+          merge-multiple: true
+
+      - name: Render Homebrew formula
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="${GITHUB_REF_NAME#v}"
+          python3 packaging/homebrew/render_formula.py \
+            --template packaging/homebrew/corequarry.rb.in \
+            --output dist/corequarry.rb \
+            --version "${version}" \
+            --tag "${GITHUB_REF_NAME}" \
+            --arm64 "dist/corequarry-${version}-Darwin-arm64.tar.gz" \
+            --x86-64 "dist/corequarry-${version}-Darwin-x86_64.tar.gz"
+
+      - name: Generate checksums
+        shell: bash
+        run: |
+          set -euo pipefail
+          (
+            cd dist
+            sha256sum * > SHA256SUMS
+          )
+          cat dist/SHA256SUMS
+
+      - name: Publish release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if gh release view "${GITHUB_REF_NAME}" >/dev/null 2>&1; then
+            gh release upload "${GITHUB_REF_NAME}" dist/* --clobber
+          else
+            gh release create "${GITHUB_REF_NAME}" dist/* \
+              --verify-tag \
+              --title "CoreQuarry ${GITHUB_REF_NAME}" \
+              --generate-notes
+          fi
