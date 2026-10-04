@@ -45,13 +45,8 @@ jobs:
           fetch-depth: 0
           submodules: recursive
 
-      - name: Apply packaging compatibility patches
-        shell: bash
-        run: |
-          git -C Schmate apply --check ../packaging/patches/schmate-portable-build.patch
-          git -C Schmate apply ../packaging/patches/schmate-portable-build.patch
-          git -C bert.cpp apply --check ../packaging/patches/bert-modern-ggml.patch
-          git -C bert.cpp apply ../packaging/patches/bert-modern-ggml.patch
+      - name: Apply packaging compatibility fixes
+        run: python3 packaging/apply_compat.py
 
       - name: Resolve version
         id: version
@@ -146,13 +141,8 @@ jobs:
           fetch-depth: 0
           submodules: recursive
 
-      - name: Apply packaging compatibility patches
-        shell: bash
-        run: |
-          git -C Schmate apply --check ../packaging/patches/schmate-portable-build.patch
-          git -C Schmate apply ../packaging/patches/schmate-portable-build.patch
-          git -C bert.cpp apply --check ../packaging/patches/bert-modern-ggml.patch
-          git -C bert.cpp apply ../packaging/patches/bert-modern-ggml.patch
+      - name: Apply packaging compatibility fixes
+        run: python3 packaging/apply_compat.py
 
       - name: Resolve version
         id: version
@@ -234,13 +224,8 @@ jobs:
           fetch-depth: 0
           submodules: recursive
 
-      - name: Apply packaging compatibility patches
-        shell: bash
-        run: |
-          git -C Schmate apply --check ../packaging/patches/schmate-portable-build.patch
-          git -C Schmate apply ../packaging/patches/schmate-portable-build.patch
-          git -C bert.cpp apply --check ../packaging/patches/bert-modern-ggml.patch
-          git -C bert.cpp apply ../packaging/patches/bert-modern-ggml.patch
+      - name: Apply packaging compatibility fixes
+        run: python3 packaging/apply_compat.py
 
       - name: Resolve version
         id: version
