@@ -128,6 +128,58 @@ def patch_ib() -> None:
     )
 
 
+    numbers = ROOT / "ib/src/numbers.cxx"
+    replace_once(
+        numbers,
+        "#include <charconv>\n",
+        "#include <charconv>\n#include <cmath>\n",
+    )
+    replace_once(
+        numbers,
+        "const NUMBER whole = floorl(x);",
+        "const NUMBER whole = std::floor(x);",
+    )
+    replace_once(
+        numbers,
+        "UINT4 fract = (UINT4)floorl(f + 0.5L);",
+        "UINT4 fract = (UINT4)std::floor(f + 0.5L);",
+    )
+    replace_once(
+        numbers,
+        """  /*
+   * FAST PATH
+   *
+   * This should handle the overwhelming majority of integer metadata:
+   *
+   *     123
+   *     -123
+   *     +123
+   */
+  {
+    INT16 value;
+
+    const auto result = std::from_chars(p, end, value, 10);
+
+    if (result.ec == std::errc() && result.ptr == end) {
+      val   = value;
+      valid = true;
+      return true;
+    }
+  }
+
+
+""",
+        """  /*
+   * The pinned source used std::from_chars directly with INT16 (__int128).
+   * Standard libstdc++ overloads do not support __int128, so fall through to
+   * the existing checked 128-bit parser below.
+   */
+
+
+""",
+    )
+
+
 def patch_bert_cpp() -> None:
     cmake = ROOT / "bert.cpp/CMakeLists.txt"
     replace_once(
