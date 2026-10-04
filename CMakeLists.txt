@@ -17,6 +17,26 @@ set(
     "Architecture label used in portable package file names"
 )
 
+option(
+    COREQUARRY_PORTABLE_BUILD
+    "Build distributable binaries without CI-host-specific CPU tuning"
+    OFF
+)
+
+if(COREQUARRY_PORTABLE_BUILD)
+    # Release packages must run on a broad CPU baseline rather than inheriting
+    # the instruction set of the hosted runner that happened to build them.
+    set(GGML_NATIVE OFF CACHE BOOL "Disable host-specific ggml tuning" FORCE)
+    set(GGML_AVX OFF CACHE BOOL "Disable AVX in portable packages" FORCE)
+    set(GGML_AVX2 OFF CACHE BOOL "Disable AVX2 in portable packages" FORCE)
+    set(GGML_FMA OFF CACHE BOOL "Disable FMA in portable packages" FORCE)
+
+    # The pinned Schmate HNSW fork currently contains an incomplete manual-SIMD
+    # branch. Use its scalar/portable implementation for distributable builds;
+    # developer/source builds remain unchanged unless this option is enabled.
+    add_compile_definitions(NO_MANUAL_VECTORIZATION)
+endif()
+
 # ==============================================================================
 # Hardware Acceleration & Optimization Flags
 # ==============================================================================
