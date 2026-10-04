@@ -6,7 +6,7 @@
 
 Source: <https://github.com/re-Isearch/CoreQuarry> · Licensed under the [Apache License 2.0](#license)
 
-**Contents:** [What it is](#what-it-is) · [Why local-first](#why-local-first) · [What you get](#what-you-get) · [Why did we develop this](#why-did-we-develop-this) ·  [Where it's used](#where-its-used) · [Quickstart](#quickstart) · [Why it works this way](#why-it-works-this-way) · [What this repository is built from](#what-this-repository-is-built-from) · [Building, installing and developing](#building-installing-and-developing) · [Learn more](#learn-more) · [Thanks](#thanks)
+**Contents:** [What it is](#what-it-is) · [Why local-first](#why-local-first) · [What you get](#what-you-get) · [Why did we develop this](#why-did-we-develop-this) ·  [Where it's used](#where-its-used) · [Packages](#packages) · [Quickstart](#quickstart) · [Why it works this way](#why-it-works-this-way) · [What this repository is built from](#what-this-repository-is-built-from) · [Building, installing and developing](#building-installing-and-developing) · [Learn more](#learn-more) · [Thanks](#thanks)
 
 ## What it is
 
@@ -119,6 +119,25 @@ It delivers:
 * Offline Resiliency: Many services must function during regional internet outages or infrastructure failures; local setups ensure internal search operations never go offline.
 * Energy Efficiency: CoreQuarry is designed to enable highly capable local AI systems with a fraction of the energy consumption of conventional cloud deployments. By enabling operation at any point on the retrieval quality–efficiency frontier, CoreQuarry allows organisations to optimise not only for accuracy and cost, but also for energy consumption, deployment constraints, and digital sovereignty requirements.
 
+
+## Packages
+
+CoreQuarry's release workflow produces native packages from the same pinned
+submodules used by the source build:
+
+- Debian/Ubuntu: `.deb` for amd64 and arm64.
+- Fedora/RHEL-family: `.rpm` for x86_64 and aarch64.
+- macOS: prebuilt `.tar.gz` archives for Apple Silicon and Intel, plus a
+  versioned Homebrew formula in each GitHub Release.
+- Portable Linux: `.tar.gz` archives for amd64 and arm64.
+
+Every package build is smoke-tested from the packaged artifact rather than only
+from the CMake build tree. Release assets also include `SHA256SUMS`.
+
+Native Windows packages are not published yet because the currently pinned
+`ib` build explicitly supports macOS, Linux/Unix, and BSD and rejects Windows
+at CMake configure time. See [Packaging and releases](docs/packaging.md) for the
+support matrix, release process, and the Windows compatibility gap.
 
 ## Quickstart
 
