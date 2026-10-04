@@ -19,6 +19,10 @@ set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/LICENSE")
 # by Homebrew or extracted under / by users who choose the portable tarball.
 set(CPACK_PACKAGING_INSTALL_PREFIX "/usr")
 
+# Portable archives expose usr/ at their root. This keeps manual extraction,
+# the package smoke test, and Homebrew relocation consistent.
+set(CPACK_INCLUDE_TOPLEVEL_DIRECTORY OFF)
+
 # Keep portable archive names deterministic across CI runners.
 set(
     CPACK_PACKAGE_FILE_NAME
