@@ -128,6 +128,13 @@ def patch_ib() -> None:
     )
 
 
+    dfd_cpp = ROOT / "ib/src/dfd.cxx"
+    replace_once(
+        dfd_cpp,
+        '#include "dfd.hxx"\n',
+        '#include "dfd.hxx"\n#include <stdint.h>\n',
+    )
+
     mmap_cpp = ROOT / "ib/src/mmap.cxx"
     replace_once(
         mmap_cpp,
