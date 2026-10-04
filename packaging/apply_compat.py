@@ -32,7 +32,7 @@ def patch_schmate() -> None:
     add_include(
         "Schmate/include/Logger.hpp",
         "#include <iostream>\n",
-        "#include <atomic>\n",
+        "#include <atomic>\n#include <cstring>\n",
     )
     add_include(
         "Schmate/include/FileLock.hpp",
@@ -62,6 +62,18 @@ def patch_schmate() -> None:
         "}\n"
         "\n"
         '#include "hnswlib.h"\n',
+    )
+
+    logger_cpp = ROOT / "Schmate/src/Logger.cpp"
+    replace_once(
+        logger_cpp,
+        "openlog(prefix_, LOG_PID | LOG_CONS, LOG_USER);",
+        "openlog(prefix_.c_str(), LOG_PID | LOG_CONS, LOG_USER);",
+    )
+    replace_once(
+        logger_cpp,
+        "file_stream.open(filename, std::ios::app);",
+        "file_stream.open(std::string(filename), std::ios::app);",
     )
 
     bert_index = ROOT / "Schmate/src/BertIndex.cpp"
