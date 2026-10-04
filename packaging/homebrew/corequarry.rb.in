@@ -1,0 +1,32 @@
+class Corequarry < Formula
+  desc "Local-first hybrid lexical, structural, and semantic retrieval engine"
+  homepage "https://github.com/dockers-projects/CoreQuarry"
+  version "@VERSION@"
+  license "Apache-2.0"
+
+  depends_on :macos
+  depends_on "berkeley-db"
+  depends_on "gdbm"
+  depends_on "jemalloc"
+  depends_on "libmagic"
+  depends_on "libomp"
+  depends_on "openssl@3"
+
+  on_arm do
+    url "https://github.com/dockers-projects/CoreQuarry/releases/download/@TAG@/corequarry-@VERSION@-Darwin-arm64.tar.gz"
+    sha256 "@ARM64_SHA256@"
+  end
+
+  on_intel do
+    url "https://github.com/dockers-projects/CoreQuarry/releases/download/@TAG@/corequarry-@VERSION@-Darwin-x86_64.tar.gz"
+    sha256 "@X86_64_SHA256@"
+  end
+
+  def install
+    prefix.install Dir["usr/*"]
+  end
+
+  test do
+    assert_match "CoreQuarry CLI", shell_output("#{bin}/quarry --help")
+  end
+end
